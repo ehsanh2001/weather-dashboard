@@ -11,3 +11,8 @@ header {
 .btn-lg:hover {
     cursor: pointer;
 }
+
+.remove-bullet {
+    list-style-type: none;
+    padding: 0px;
+}
