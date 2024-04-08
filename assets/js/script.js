@@ -16,7 +16,7 @@ function createWeatherCard(
     cityName = ""
 ) {
     const card = document.createElement("div");
-    card.classList.add("card","mb-3");
+    card.classList.add("card", "mb-3");
 
     const cardBody = document.createElement("div");
     cardBody.classList.add("card-body");
@@ -75,13 +75,6 @@ async function getCityCoord(cityName) {
         return null;
     }
     return cities[cityIndex];
-}
-
-async function getTodayWeather(city) {
-    const todayWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${city.lat}&lon=${city.lon}&appid=${apiKey}&units=metric`;
-    const todayWeatherResponse = await fetch(todayWeatherUrl);
-    const todayWeatherData = await todayWeatherResponse.json();
-    return todayWeatherData;
 }
 
 async function getForecast(city) {
@@ -148,23 +141,32 @@ async function search() {
     }
 }
 
+function todayWeather(forecastData) {
+    let todayDate = dayjs();
+    let index = forecastData.list.findIndex((item) =>
+        dayjs(item.dt_txt, "YYYY-MM-DD HH:mm:ss").isSame(todayDate, "day")
+    );
+    index = index === -1 ? 0 : index;
+    return forecastData.list[index];
+}
 async function handleNewForecastRequest(city) {
     try {
-        // get today's weather data
-        const todayWeatherData = await getTodayWeather(city);
+        // get forecast data
+        const forecastData = await getForecast(city);
 
+        // get today's weather data
+        let todayWeatherData = todayWeather(forecastData);
         const todayWeatherCard = createWeatherCard(
             todayWeatherData,
             "dddd, MMMM D, YYYY",
             city.name
         );
+
         //show today's weather
         const todayCardContainer = document.getElementById("today-weather");
         todayCardContainer.innerHTML = "";
         todayCardContainer.appendChild(todayWeatherCard);
 
-        // get forecast data
-        const forecastData = await getForecast(city);
         // use dayjs to get the date/time of tomorrow at 9:00 AM
         let forecastDate = dayjs().add(1, "day").startOf("day").add(9, "hour");
 
@@ -209,6 +211,7 @@ async function historyClicked(event) {
     }
 }
 document.addEventListener("DOMContentLoaded", function () {
+    dayjs.extend(window.dayjs_plugin_customParseFormat);
     document.getElementById("search-btn").addEventListener("click", search);
     document
         .getElementById("city-name")
