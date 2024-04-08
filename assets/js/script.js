@@ -151,49 +151,68 @@ function todayWeather(forecastData) {
 }
 async function handleNewForecastRequest(city) {
     try {
-        // get forecast data
         const forecastData = await getForecast(city);
+        displayTodayWeather(forecastData, city.name);
+        display5DayForecast(forecastData);
 
-        // get today's weather data
-        let todayWeatherData = todayWeather(forecastData);
-        const todayWeatherCard = createWeatherCard(
-            todayWeatherData,
-            "dddd, MMMM D, YYYY",
-            city.name
-        );
-
-        //show today's weather
-        const todayCardContainer = document.getElementById("today-weather");
-        todayCardContainer.innerHTML = "";
-        todayCardContainer.appendChild(todayWeatherCard);
-
-        // use dayjs to get the date/time of tomorrow at 9:00 AM
-        let forecastDate = dayjs().add(1, "day").startOf("day").add(9, "hour");
-
-        // show next 5 days forecast
-        for (let i = 0; i < 5; i++, forecastDate = forecastDate.add(1, "day")) {
-            let forecast = findForcastForDate(forecastData, forecastDate);
-            if (forecast) {
-                forecast.weather[0].icon = forecast.weather[0].icon.replace(
-                    "n",
-                    "d"
-                );
-
-                const card = createWeatherCard(forecast);
-                card.classList.add("forcast-color");
-                forecasrColumns[i].innerHTML = "";
-                forecasrColumns[i].appendChild(card);
-            }
-        }
+        localStorage.setItem("currentCity", city.name);
     } catch (error) {
         console.error("ERROR:" + error);
+    }
+}
+
+function displayTodayWeather(forecastData, cityName) {
+    // get today's weather data
+    let todayWeatherData = todayWeather(forecastData);
+    todayWeatherData.weather[0].icon = todayWeatherData.weather[0].icon.replace(
+        "n",
+        "d"
+    );
+    const todayWeatherCard = createWeatherCard(
+        todayWeatherData,
+        "dddd, MMMM D, YYYY",
+        cityName
+    );
+
+    //show today's weather
+    const todayCardContainer = document.getElementById("today-weather");
+    todayCardContainer.innerHTML = "";
+    todayCardContainer.appendChild(todayWeatherCard);
+}
+
+function display5DayForecast(forecastData) {
+    // use dayjs to get the date/time of tomorrow at 9:00 AM
+    let forecastDate = dayjs().add(1, "day").startOf("day").add(9, "hour");
+
+    // show next 5 days forecast
+    for (let i = 0; i < 5; i++, forecastDate = forecastDate.add(1, "day")) {
+        let forecast = findForcastForDate(forecastData, forecastDate);
+        if (forecast) {
+            forecast.weather[0].icon = forecast.weather[0].icon.replace(
+                "n",
+                "d"
+            );
+
+            const card = createWeatherCard(forecast);
+            card.classList.add("forcast-color");
+            forecasrColumns[i].innerHTML = "";
+            forecasrColumns[i].appendChild(card);
+        }
+    }
+}
+
+async function displayCurrentCityWeather() {
+    let currentCity = localStorage.getItem("currentCity");
+    if (currentCity) {
+        let city = await getCityCoord(currentCity);
+        handleNewForecastRequest(city);
     }
 }
 
 async function historyClicked(event) {
     if (event.target.tagName === "BUTTON") {
         if (event.target.classList.contains("btn-close")) {
-            //event.target.parentElement.remove();
+            // remove the city from the history
             let history = JSON.parse(localStorage.getItem("history")) || [];
             history = history.filter(
                 (cityName) => cityName !== event.target.nextSibling.textContent
@@ -201,6 +220,7 @@ async function historyClicked(event) {
             localStorage.setItem("history", JSON.stringify(history));
             loadHistory();
         } else {
+            // get the city weather
             const city = await getCityCoord(event.target.textContent);
             if (city) {
                 handleNewForecastRequest(city);
@@ -224,4 +244,5 @@ document.addEventListener("DOMContentLoaded", function () {
         .getElementById("search-history")
         .addEventListener("click", historyClicked);
     loadHistory();
+    displayCurrentCityWeather();
 });
