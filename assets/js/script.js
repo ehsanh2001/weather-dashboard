@@ -28,7 +28,7 @@ function createWeatherCard(
     cardTitle.textContent = `${cityName} ${todayDate}`;
     // card icon
     const cardIcon = document.createElement("img");
-    cardIcon.src = `http://openweathermap.org/img/wn/${forcastData.weather[0].icon}.png`;
+    cardIcon.src = `https://openweathermap.org/img/wn/${forcastData.weather[0].icon}.png`;
     // card text
     const cardText = document.createElement("ul");
     cardText.classList.add("remove-bullet");
@@ -57,7 +57,7 @@ function createWeatherCard(
 // Get a city object for coordinates
 async function getCityCoord(cityName) {
     const cityCoordUrl = encodeURI(
-        `http://api.openweathermap.org/geo/1.0/direct?q=${cityName}&limit=5&appid=${apiKey}`
+        `https://api.openweathermap.org/geo/1.0/direct?q=${cityName}&limit=5&appid=${apiKey}`
     );
     let cities;
     try {
@@ -78,7 +78,7 @@ async function getCityCoord(cityName) {
 }
 
 async function getForecast(city) {
-    const weatherUrl = `http://api.openweathermap.org/data/2.5/forecast?lat=${city.lat}&lon=${city.lon}&appid=${apiKey}&units=metric`;
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${city.lat}&lon=${city.lon}&appid=${apiKey}&units=metric`;
     const weatherResponse = await fetch(weatherUrl);
     const weatherData = await weatherResponse.json();
     return weatherData;
