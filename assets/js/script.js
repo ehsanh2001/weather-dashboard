@@ -25,7 +25,7 @@ function createWeatherCard(
     const cardTitle = document.createElement("h5");
     cardTitle.classList.add("card-title");
     const todayDate = dayjs(forcastData.dt * 1000).format(dateFormat);
-    cardTitle.textContent = `${cityName} (${todayDate})`;
+    cardTitle.textContent = `${cityName} ${todayDate}`;
     // card icon
     const cardIcon = document.createElement("img");
     cardIcon.src = `http://openweathermap.org/img/wn/${forcastData.weather[0].icon}.png`;
@@ -102,10 +102,16 @@ function loadHistory() {
 }
 function createHistory(cityName) {
     const historyItem = document.createElement("div");
-    historyItem.classList.add("alert", "alert-success", "alert-dismissible");
+    historyItem.classList.add(
+        "alert",
+        "alert-success",
+        "alert-dismissible",
+        "p-0",
+        "text-center"
+    );
 
     const closeBtn = document.createElement("button");
-    closeBtn.classList.add("btn-close");
+    closeBtn.classList.add("btn-close", "p-0", "p-2");
     closeBtn.setAttribute("data-bs-dismiss", "alert");
     closeBtn.setAttribute("type", "button");
 
@@ -170,7 +176,7 @@ function displayTodayWeather(forecastData, cityName) {
     );
     const todayWeatherCard = createWeatherCard(
         todayWeatherData,
-        "dddd, MMMM D, YYYY",
+        "[(]dddd, MMMM D, YYYY[)]",
         cityName
     );
 
