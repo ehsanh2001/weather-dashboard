@@ -2,8 +2,19 @@
 
 const apiKey = "c306c772a6e68ff8345b9519e22b1ade";
 const searchInput = document.getElementById("city-name");
+const forecasrColumns = [
+    document.getElementById("forecast-col1"),
+    document.getElementById("forecast-col2"),
+    document.getElementById("forecast-col3"),
+    document.getElementById("forecast-col4"),
+    document.getElementById("forecast-col5"),
+];
 
-function createTodayWeatherCard(todayWeatherData) {
+function createWeatherCard(
+    forcastData,
+    dateFormat = "DD/MM/YYYY",
+    cityName = ""
+) {
     const card = document.createElement("div");
     card.classList.add("card");
 
@@ -12,22 +23,20 @@ function createTodayWeatherCard(todayWeatherData) {
 
     const cardTitle = document.createElement("h5");
     cardTitle.classList.add("card-title");
-    const todayDate = dayjs(todayWeatherData.dt * 1000).format(
-        "dddd, MMMM D, YYYY"
-    );
-    cardTitle.textContent = todayWeatherData.name + ` (${todayDate})`;
+    const todayDate = dayjs(forcastData.dt * 1000).format(dateFormat);
+    cardTitle.textContent = `${cityName} (${todayDate})`;
 
     const cardText = document.createElement("ul");
     cardText.classList.add("remove-bullet");
 
     const temprture = document.createElement("li");
-    temprture.textContent = `Temp: ${todayWeatherData.main.temp}°C`;
+    temprture.textContent = `Temp: ${forcastData.main.temp}°C`;
 
     const wind = document.createElement("li");
-    wind.textContent = `Wind: ${todayWeatherData.wind.speed} km/h`;
+    wind.textContent = `Wind: ${forcastData.wind.speed} km/h`;
 
     const humidity = document.createElement("li");
-    humidity.textContent = `Humidity: ${todayWeatherData.main.humidity}%`;
+    humidity.textContent = `Humidity: ${forcastData.main.humidity}%`;
 
     cardText.appendChild(temprture);
     cardText.appendChild(wind);
@@ -70,20 +79,47 @@ async function getTodayWeather(city) {
     return todayWeatherData;
 }
 
+async function getForecast(city) {
+    const weatherUrl = `http://api.openweathermap.org/data/2.5/forecast?lat=${city.lat}&lon=${city.lon}&appid=${apiKey}&units=metric`;
+    const weatherResponse = await fetch(weatherUrl);
+    const weatherData = await weatherResponse.json();
+    return weatherData;
+}
+
 async function search() {
     const cityName = searchInput.value;
     try {
         const city = await getCityCoord(cityName);
         if (city) {
             const todayWeatherData = await getTodayWeather(city);
-            const todayWeatherCard = createTodayWeatherCard(todayWeatherData);
+            const todayWeatherCard = createWeatherCard(
+                todayWeatherData,
+                "dddd, MMMM D, YYYY",
+                todayWeatherData.name
+            );
             const todayCardContainer = document.getElementById("today-weather");
             todayCardContainer.innerHTML = "";
             todayCardContainer.appendChild(todayWeatherCard);
+
+            const forecastData = await getForecast(city);
+            //the forcast data is an array of 40 objects, each object represents the weather for 3 hours
+            // we will take the weather for the next 5 days at 12:00 PM
+            // each day has 8 objects in the array (hence the +8 in the for loop)
+            // 12PM forcast is the 5th object in the array (hence the i=5)
+            //
+            let forecastColumnIndex = 0;
+            for (let i = 5; i < forecastData.list.length; i += 8) {
+                const card = createWeatherCard(forecastData.list[i]);
+                card.classList.add("forcast-color");
+                forecasrColumns[forecastColumnIndex].innerHTML = "";
+                forecasrColumns[forecastColumnIndex].appendChild(card);
+                forecastColumnIndex++;
+            }
         } else {
             alert("City not found");
         }
     } catch (error) {
+        throw error;
         console.error("ERROR:" + error);
     }
 }

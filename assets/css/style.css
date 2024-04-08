@@ -16,3 +16,8 @@ header {
     list-style-type: none;
     padding: 0px;
 }
+
+.forcast-color {
+    color: #fff;
+    background-color: #1f4d7e;
+}
