@@ -98,59 +98,127 @@ function findForcastForDate(forecastData, date) {
 
     return index !== -1 ? forecastData.list[index] : null;
 }
+function loadHistory() {
+    const historyContainer = document.getElementById("search-history");
+    historyContainer.innerHTML = "";
+
+    let history = JSON.parse(localStorage.getItem("history")) || [];
+    history.forEach((cityName) => {
+        historyContainer.appendChild(createHistory(cityName));
+    });
+}
+function createHistory(cityName) {
+    const historyItem = document.createElement("div");
+    historyItem.classList.add("alert", "alert-success", "alert-dismissible");
+
+    const closeBtn = document.createElement("button");
+    closeBtn.classList.add("btn-close");
+    closeBtn.setAttribute("data-bs-dismiss", "alert");
+    closeBtn.setAttribute("type", "button");
+
+    const button = document.createElement("button");
+    button.classList.add("btn", "text-center");
+    button.setAttribute("type", "button");
+    button.setAttribute("style", "width: 100%");
+    button.textContent = cityName;
+
+    historyItem.appendChild(closeBtn);
+    historyItem.appendChild(button);
+
+    return historyItem;
+}
+
+function addToHistory(cityName) {
+    let history = JSON.parse(localStorage.getItem("history")) || [];
+    if (history.includes(cityName)) {
+        return;
+    }
+    history.push(cityName);
+    localStorage.setItem("history", JSON.stringify(history));
+}
 async function search() {
     const cityName = searchInput.value;
+    const city = await getCityCoord(cityName);
+    if (city) {
+        handleNewForecastRequest(city);
+        addToHistory(city.name);
+        loadHistory();
+    } else {
+        alert("City not found");
+    }
+}
+
+async function handleNewForecastRequest(city) {
     try {
-        const city = await getCityCoord(cityName);
-        if (city) {
-            // get today weather data
-            const todayWeatherData = await getTodayWeather(city);
-			
-            const todayWeatherCard = createWeatherCard(
-                todayWeatherData,
-                "dddd, MMMM D, YYYY",
-                todayWeatherData.name
-            );
-            const todayCardContainer = document.getElementById("today-weather");
-            todayCardContainer.innerHTML = "";
-            todayCardContainer.appendChild(todayWeatherCard);
+        // get today's weather data
+        const todayWeatherData = await getTodayWeather(city);
 
-			// get forecast data
-            const forecastData = await getForecast(city);
-            // use dayjs to get the date/time of tomorrow at 9:00 AM
-            let forecastDate = dayjs()
-                .add(1, "day")
-                .startOf("day")
-                .add(9, "hour");
+        const todayWeatherCard = createWeatherCard(
+            todayWeatherData,
+            "dddd, MMMM D, YYYY",
+            city.name
+        );
+        //show today's weather
+        const todayCardContainer = document.getElementById("today-weather");
+        todayCardContainer.innerHTML = "";
+        todayCardContainer.appendChild(todayWeatherCard);
 
-            // loop through the next 5 days
-            for (
-                let i = 0;
-                i < 5;
-                i++, forecastDate = forecastDate.add(1, "day")
-            ) {
-                let forecast = findForcastForDate(forecastData, forecastDate);
-                if (forecast) {
-                    forecast.weather[0].icon = forecast.weather[0].icon.replace(
-                        "n",
-                        "d"
-                    );
+        // get forecast data
+        const forecastData = await getForecast(city);
+        // use dayjs to get the date/time of tomorrow at 9:00 AM
+        let forecastDate = dayjs().add(1, "day").startOf("day").add(9, "hour");
 
-                    const card = createWeatherCard(forecast);
-                    card.classList.add("forcast-color");
-                    forecasrColumns[i].innerHTML = "";
-                    forecasrColumns[i].appendChild(card);
-                }
+        // show next 5 days forecast
+        for (let i = 0; i < 5; i++, forecastDate = forecastDate.add(1, "day")) {
+            let forecast = findForcastForDate(forecastData, forecastDate);
+            if (forecast) {
+                forecast.weather[0].icon = forecast.weather[0].icon.replace(
+                    "n",
+                    "d"
+                );
+
+                const card = createWeatherCard(forecast);
+                card.classList.add("forcast-color");
+                forecasrColumns[i].innerHTML = "";
+                forecasrColumns[i].appendChild(card);
             }
-        } else {
-            alert("City not found");
         }
     } catch (error) {
-        throw error;
         console.error("ERROR:" + error);
     }
 }
 
+async function historyClicked(event) {
+    if (event.target.tagName === "BUTTON") {
+        if (event.target.classList.contains("btn-close")) {
+            //event.target.parentElement.remove();
+            let history = JSON.parse(localStorage.getItem("history")) || [];
+            history = history.filter(
+                (cityName) => cityName !== event.target.nextSibling.textContent
+            );
+            localStorage.setItem("history", JSON.stringify(history));
+            loadHistory();
+        } else {
+            const city = await getCityCoord(event.target.textContent);
+            if (city) {
+                handleNewForecastRequest(city);
+            } else {
+                alert("City not found");
+            }
+        }
+    }
+}
 document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("search-btn").addEventListener("click", search);
+    document
+        .getElementById("city-name")
+        .addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                search();
+            }
+        });
+    document
+        .getElementById("search-history")
+        .addEventListener("click", historyClicked);
+    loadHistory();
 });
