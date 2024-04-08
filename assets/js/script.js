@@ -16,7 +16,7 @@ function createWeatherCard(
     cityName = ""
 ) {
     const card = document.createElement("div");
-    card.classList.add("card");
+    card.classList.add("card","mb-3");
 
     const cardBody = document.createElement("div");
     cardBody.classList.add("card-body");
