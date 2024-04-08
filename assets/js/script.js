@@ -1,4 +1,4 @@
-"use strick";
+"use strict";
 
 const apiKey = "c306c772a6e68ff8345b9519e22b1ade";
 const searchInput = document.getElementById("city-name");
@@ -21,11 +21,15 @@ function createWeatherCard(
     const cardBody = document.createElement("div");
     cardBody.classList.add("card-body");
 
+    // card title
     const cardTitle = document.createElement("h5");
     cardTitle.classList.add("card-title");
     const todayDate = dayjs(forcastData.dt * 1000).format(dateFormat);
     cardTitle.textContent = `${cityName} (${todayDate})`;
-
+    // card icon
+    const cardIcon = document.createElement("img");
+    cardIcon.src = `http://openweathermap.org/img/wn/${forcastData.weather[0].icon}.png`;
+    // card text
     const cardText = document.createElement("ul");
     cardText.classList.add("remove-bullet");
 
@@ -43,6 +47,7 @@ function createWeatherCard(
     cardText.appendChild(humidity);
 
     cardBody.appendChild(cardTitle);
+    cardBody.appendChild(cardIcon);
     cardBody.appendChild(cardText);
     card.appendChild(cardBody);
 
@@ -86,12 +91,21 @@ async function getForecast(city) {
     return weatherData;
 }
 
+function findForcastForDate(forecastData, date) {
+    let index = forecastData.list.findIndex(
+        (item) => item.dt_txt === date.format("YYYY-MM-DD HH:mm:ss")
+    );
+
+    return index !== -1 ? forecastData.list[index] : null;
+}
 async function search() {
     const cityName = searchInput.value;
     try {
         const city = await getCityCoord(cityName);
         if (city) {
+            // get today weather data
             const todayWeatherData = await getTodayWeather(city);
+			
             const todayWeatherCard = createWeatherCard(
                 todayWeatherData,
                 "dddd, MMMM D, YYYY",
@@ -101,19 +115,32 @@ async function search() {
             todayCardContainer.innerHTML = "";
             todayCardContainer.appendChild(todayWeatherCard);
 
+			// get forecast data
             const forecastData = await getForecast(city);
-            //the forcast data is an array of 40 objects, each object represents the weather for 3 hours
-            // we will take the weather for the next 5 days at 12:00 PM
-            // each day has 8 objects in the array (hence the +8 in the for loop)
-            // 12PM forcast is the 5th object in the array (hence the i=5)
-            //
-            let forecastColumnIndex = 0;
-            for (let i = 5; i < forecastData.list.length; i += 8) {
-                const card = createWeatherCard(forecastData.list[i]);
-                card.classList.add("forcast-color");
-                forecasrColumns[forecastColumnIndex].innerHTML = "";
-                forecasrColumns[forecastColumnIndex].appendChild(card);
-                forecastColumnIndex++;
+            // use dayjs to get the date/time of tomorrow at 9:00 AM
+            let forecastDate = dayjs()
+                .add(1, "day")
+                .startOf("day")
+                .add(9, "hour");
+
+            // loop through the next 5 days
+            for (
+                let i = 0;
+                i < 5;
+                i++, forecastDate = forecastDate.add(1, "day")
+            ) {
+                let forecast = findForcastForDate(forecastData, forecastDate);
+                if (forecast) {
+                    forecast.weather[0].icon = forecast.weather[0].icon.replace(
+                        "n",
+                        "d"
+                    );
+
+                    const card = createWeatherCard(forecast);
+                    card.classList.add("forcast-color");
+                    forecasrColumns[i].innerHTML = "";
+                    forecasrColumns[i].appendChild(card);
+                }
             }
         } else {
             alert("City not found");
